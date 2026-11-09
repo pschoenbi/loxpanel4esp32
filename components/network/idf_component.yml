@@ -1,0 +1,13 @@
+dependencies:
+  idf: ">=5.4"
+  # Muss EXAKT zur Firmware auf dem ESP32-C6 passen (Elecrow ab Werk: network_adapter 2.12.3).
+  # Schon 2.12.3 <-> 2.12.12 bricht den SDIO-Handshake (Elecrow C6-Paket, README Abschnitt 1).
+  # Wird der C6 aktualisiert, diese Version gleichziehen.
+  espressif/esp_hosted:
+    version: "==2.12.3"
+    rules:
+      - if: "target == esp32p4"
+  espressif/esp_wifi_remote:
+    version: "^1.6"
+    rules:
+      - if: "target == esp32p4"

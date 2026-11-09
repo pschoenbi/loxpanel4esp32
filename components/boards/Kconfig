@@ -1,0 +1,14 @@
+menu "LoxPanel Hardware-Profil"
+
+    choice LOXPANEL_BOARD
+        prompt "Board"
+        default LOXPANEL_BOARD_CROWPANEL_P4_9IN
+        help
+            Hardware-Profil, für das die Firmware gebaut wird.
+            Neues Display = neues Profil in components/boards/.
+
+        config LOXPANEL_BOARD_CROWPANEL_P4_9IN
+            bool "Elecrow CrowPanel Advanced ESP32-P4 9\" (1024x600, EK79007, GT911)"
+    endchoice
+
+endmenu

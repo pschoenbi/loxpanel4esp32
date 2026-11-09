@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "vorlage": "Wohnung-Standard",
+  "vorlage_version": 4,
+  "variablen": { "raum": "Wohnzimmer" },
+  "anzeige": { "helligkeit": 80, "dimmen_nach_s": 60, "startseite": 0 },
+  "seiten": [
+    {
+      "titel": "Licht",
+      "kacheln": [
+        { "typ": "licht",    "ziel": "{raum}/Stube", "breite": 2 },
+        { "typ": "licht",    "ziel": "{raum}/Esstisch" },
+        { "typ": "licht",    "ziel": "{raum}/Table Lamp" },
+        { "typ": "schalter", "ziel": "{raum}/TV Ein - Aus", "titel": "TV" },
+        { "typ": "licht",    "ziel": "Küche/Küche", "breite": 2 },
+        { "typ": "licht",    "ziel": "Küche/Bar" },
+        { "typ": "licht",    "ziel": "Büro/Büro" },
+        { "typ": "jalousie", "ziel": "Büro/Rolladen Büro" },
+        { "typ": "info",     "ziel": "{raum}/Luftfeuchte" },
+        { "typ": "zaehler",  "ziel": "{raum}/Zähler", "breite": 2 }
+      ]
+    },
+    {
+      "titel": "Klima",
+      "kacheln": [
+        { "typ": "raumregler", "ziel": "{raum}/Wohnzimmer", "breite": 2, "hoehe": 2 },
+        { "typ": "raumregler", "ziel": "Küche/Küche", "breite": 2 },
+        { "typ": "raumregler", "ziel": "Büro/Büro" },
+        { "typ": "raumregler", "ziel": "Bad OG/Bad OG", "breite": 2 },
+        { "typ": "info",       "ziel": "{raum}/Luftfeuchte" }
+      ]
+    },
+    { "titel": "{raum}", "auto": { "raum": "{raum}" } },
+    { "titel": "Küche", "auto": { "raum": "Küche" } },
+    { "titel": "Favoriten", "auto": { "favoriten": true } }
+  ],
+  "abweichungen": {}
+}

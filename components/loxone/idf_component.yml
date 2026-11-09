@@ -1,0 +1,6 @@
+dependencies:
+  idf: ">=5.4"
+  espressif/esp_websocket_client: "^1.8"
+  espressif/cjson:
+    version: "^1.7"
+    require: public

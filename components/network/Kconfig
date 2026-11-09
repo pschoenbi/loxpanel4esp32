@@ -1,0 +1,56 @@
+menu "LoxPanel WLAN (Test)"
+
+    config LOXPANEL_WIFI_SSID
+        string "WLAN-SSID"
+        default ""
+        help
+            Nur für die Entwicklung, bis die Einrichtung per Captive Portal (Schritt 6) existiert.
+            Steht nur in der lokalen sdkconfig.
+
+    config LOXPANEL_WIFI_PASSWORD
+        string "WLAN-Passwort"
+        default ""
+
+    config LOXPANEL_WIFI_STATIC_IP
+        string "Feste IP (leer = DHCP)"
+        default ""
+        help
+            z. B. 192.168.1.107. Leer lassen für DHCP.
+
+    config LOXPANEL_WIFI_STATIC_MASK
+        string "Netzmaske"
+        default "255.255.255.0"
+
+    config LOXPANEL_WIFI_STATIC_GW
+        string "Gateway / DNS"
+        default "192.168.1.1"
+
+    config LOXPANEL_WIFI_MAC
+        string "Eigene WLAN-MAC (leer = MAC des C6)"
+        default ""
+        help
+            z. B. 02:1e:d5:7e:a1:04 (Bit "lokal verwaltet" gesetzt, kollidiert mit keinem Gerät).
+            Für Diagnose oder wenn ein Router die Original-MAC sperrt.
+
+    config LOXPANEL_WIFI_ROAM_RSSI
+        int "Roaming prüfen unter RSSI (dBm)"
+        default -70
+        range -90 -40
+        help
+            Liegt das Signal darunter, sucht das Panel nach einem stärkeren Access Point
+            mit derselben SSID (Mesh) und wechselt, wenn dieser deutlich besser ist.
+
+    config LOXPANEL_WIFI_ROAM_GAIN
+        int "Mindestgewinn für Roaming (dB)"
+        default 8
+        range 3 30
+
+    config LOXPANEL_C6_UPDATE
+        bool "ESP32-C6 beim Start auf 2.12.3 aktualisieren"
+        default n
+        help
+            Bettet die C6-Firmware (network_adapter 2.12.3) ein und überträgt sie beim Start
+            über SDIO auf den C6, falls dort eine andere Version läuft. Danach Neustart.
+            Nur für den einmaligen Umstieg einschalten, danach wieder aus.
+
+endmenu

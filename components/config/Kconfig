@@ -1,0 +1,9 @@
+menu "LoxPanel Konfiguration"
+
+    config LOXPANEL_CFG_DUMP
+        bool "Alle Bausteine beim ersten Laden ins Log schreiben"
+        default y
+        help
+            Hilft beim Schreiben von config/panel.json (Raum/Name der Bausteine).
+
+endmenu

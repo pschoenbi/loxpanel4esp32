@@ -1,0 +1,25 @@
+menu "LoxPanel Miniserver (Test)"
+
+    config LOXPANEL_MS_HOST
+        string "Miniserver-Adresse"
+        default ""
+        help
+            IP oder Hostname, optional mit Port (z. B. 192.168.1.77 oder 192.168.1.77:8080).
+            Nur für die Entwicklung, bis die Einrichtung per Weboberfläche existiert.
+
+    config LOXPANEL_MS_USER
+        string "Benutzer"
+        default ""
+
+    config LOXPANEL_MS_PASSWORD
+        string "Passwort"
+        default ""
+        help
+            Wird nur für die erste Anmeldung gebraucht. Danach meldet sich das Panel
+            mit dem gespeicherten Token an.
+
+    config LOXPANEL_LOX_LOG_VALUES
+        bool "Jede Statusänderung loggen (Diagnose)"
+        default n
+
+endmenu

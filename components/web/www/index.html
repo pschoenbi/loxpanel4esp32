@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LoxPanel</title>
+<style>
+:root{--bg:#14171c;--card:#232a33;--card2:#2a323d;--text:#e8eaed;--dim:#9aa3ad;--on:#69c350;--warn:#ffa657;--err:#ff6b6b;--btn:#353d48}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:14px 18px;background:#0e1013;position:sticky;top:0;z-index:2}
+header h1{font-size:18px;margin:0;font-weight:600}
+header .host{color:var(--dim);font-size:14px}
+nav{display:flex;gap:6px;margin-left:auto}
+nav button{background:none;border:0;color:var(--dim);padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer}
+nav button.act{background:var(--btn);color:var(--text)}
+main{max-width:900px;margin:0 auto;padding:18px 16px 60px}
+.card{background:var(--card);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+.card h2{font-size:15px;color:var(--dim);font-weight:600;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0}
+dt{color:var(--dim)}dd{margin:0;word-break:break-word}
+label{display:block;margin:12px 0 4px;color:var(--dim);font-size:14px}
+input,select,textarea{width:100%;background:var(--card2);color:var(--text);border:1px solid #3a4350;border-radius:8px;padding:10px 12px;font:inherit}
+textarea{font:13px/1.4 ui-monospace,Consolas,monospace;min-height:340px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+button.p,button.s{border:0;border-radius:9px;padding:10px 16px;font:inherit;cursor:pointer}
+button.p{background:var(--on);color:#10140f;font-weight:600}
+button.s{background:var(--btn);color:var(--text)}
+button:disabled{opacity:.5;cursor:default}
+.hint{color:var(--dim);font-size:14px}
+.ok{color:var(--on)}.warn{color:var(--warn)}.err{color:var(--err)}
+.msg{margin-top:12px;min-height:1.4em}
+details summary{cursor:pointer;color:var(--dim);margin-top:14px}
+.diff li{margin:2px 0}
+.hidden{display:none}
+/* Editor */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--btn);color:var(--text);border:0;border-radius:18px;padding:8px 14px;font:inherit;cursor:pointer}
+.chip.act{background:var(--on);color:#10140f;font-weight:600}
+.chip.auto::after{content:" ⟳";opacity:.7}
+.gridprev{display:grid;gap:8px;margin-top:12px;background:#0e1013;padding:10px;border-radius:12px}
+.gt{background:var(--card2);border-radius:10px;padding:8px 10px;cursor:pointer;min-height:64px;border:2px solid transparent;overflow:hidden}
+.gt.sel{border-color:var(--on)}
+.gt .tn{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gt .tt{color:var(--dim);font-size:12px}
+.gt.missing{background:#3a2a1c}.gt.ambiguous{background:#3a321c}.gt.hiddenTile{opacity:.4}
+.badge{display:inline-block;font-size:11px;border-radius:6px;padding:1px 6px;margin-top:4px}
+.b-ok{background:#24401c;color:var(--on)}.b-missing{background:#4a2a20;color:var(--err)}.b-ambiguous{background:#4a3a18;color:var(--warn)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:10;padding:16px}
+.modal.hidden{display:none}
+.modal .box{background:var(--card);border-radius:14px;width:min(640px,100%);max-height:88vh;display:flex;flex-direction:column;padding:16px}
+.plist{overflow:auto;margin-top:10px;flex:1}
+.plist h3{font-size:13px;color:var(--dim);margin:14px 0 4px;text-transform:uppercase;letter-spacing:.04em}
+.pi{padding:8px 10px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;gap:10px}
+.pi:hover{background:var(--card2)}.pi.dis{opacity:.45;cursor:default}
+.pi .sub{color:var(--dim);font-size:13px}
+.vars .row{margin-top:6px}
+@media(max-width:560px){nav{width:100%;margin:8px 0 0}header{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<header>
+  <h1>LoxPanel</h1><span class="host" id="host"></span>
+  <nav id="nav" class="hidden">
+    <button data-v="status" class="act">Status</button>
+    <button data-v="settings">Einstellungen</button>
+    <button data-v="editor">Editor</button>
+    <button data-v="config">Konfiguration</button>
+  </nav>
+</header>
+<main>
+
+<!-- Einrichtung / Einstellungen (gleiches Formular) -->
+<section id="v-settings" class="hidden">
+  <div class="card" id="setup-intro" hidden>
+    <h2>Einrichtung</h2>
+    <p>Willkommen. Wähle das WLAN, gib die Zugangsdaten deines Miniservers ein und lege ein Passwort für diese Weboberfläche fest. Danach startet das Panel neu und verbindet sich.</p>
+  </div>
+  <div class="card">
+    <h2>WLAN</h2>
+    <label for="wifi_ssid">Netzwerk</label>
+    <div class="row" style="margin-top:0">
+      <select id="ssid_list" style="flex:1"><option value="">– suchen –</option></select>
+      <button class="s" id="scan">Suchen</button>
+    </div>
+    <input id="wifi_ssid" placeholder="oder Namen eingeben" style="margin-top:8px">
+    <label for="wifi_pass">Passwort</label>
+    <input id="wifi_pass" type="password" autocomplete="new-password">
+    <div class="hint" id="wifi_pass_hint"></div>
+    <details>
+      <summary>Erweitert: feste IP, eigene MAC</summary>
+      <label for="ip">Feste IP (leer = automatisch per DHCP)</label><input id="ip" placeholder="z. B. 192.168.1.50">
+      <label for="mask">Netzmaske</label><input id="mask" placeholder="255.255.255.0">
+      <label for="gw">Gateway / DNS</label><input id="gw" placeholder="192.168.1.1">
+      <label for="mac">Eigene WLAN-MAC (leer = Original)</label><input id="mac" placeholder="z. B. 02:1e:d5:7e:a1:04">
+    </details>
+  </div>
+  <div class="card">
+    <h2>Miniserver</h2>
+    <label for="ms_host">Adresse (IP oder Name, optional :Port)</label><input id="ms_host" placeholder="192.168.1.20">
+    <label for="ms_user">Benutzer</label><input id="ms_user" autocomplete="off">
+    <label for="ms_pass">Passwort</label><input id="ms_pass" type="password" autocomplete="new-password">
+    <div class="hint" id="ms_pass_hint">Wird nur für die erste Anmeldung gebraucht und danach gelöscht – das Panel nutzt ein Token.</div>
+  </div>
+  <div class="card">
+    <h2>Weboberfläche</h2>
+    <label for="web_pass">Passwort für diese Seite (Benutzer: admin)</label>
+    <input id="web_pass" type="password" autocomplete="new-password">
+    <div class="hint" id="web_pass_hint"></div>
+  </div>
+  <div class="row">
+    <button class="p" id="save">Speichern</button>
+    <button class="s hidden" id="save_reboot">Speichern und neu starten</button>
+  </div>
+  <div class="msg" id="set_msg"></div>
+</section>
+
+<!-- Passwort festlegen (LAN, noch keins gesetzt) -->
+<section id="v-pw" class="hidden">
+  <div class="card">
+    <h2>Passwort festlegen</h2>
+    <p>Für diese Weboberfläche ist noch kein Passwort gesetzt. Lege jetzt eines fest (mindestens 4 Zeichen). Der Benutzername ist <b>admin</b>.</p>
+    <label for="pw1">Passwort</label><input id="pw1" type="password" autocomplete="new-password">
+    <label for="pw2">Wiederholen</label><input id="pw2" type="password" autocomplete="new-password">
+    <div class="row"><button class="p" id="pw_set">Festlegen</button></div>
+    <div class="msg" id="pw_msg"></div>
+  </div>
+</section>
+
+<!-- Status -->
+<section id="v-status" class="hidden">
+  <div class="grid">
+    <div class="card"><h2>WLAN</h2><dl id="st_wifi"></dl></div>
+    <div class="card"><h2>Loxone</h2><dl id="st_lox"></dl></div>
+    <div class="card"><h2>System</h2><dl id="st_sys"></dl>
+      <div class="row"><button class="s" id="reboot">Neu starten</button></div></div>
+  </div>
+</section>
+
+<!-- Editor -->
+<section id="v-editor" class="hidden">
+  <div class="msg" id="ed_msg"></div>
+  <div class="card">
+    <h2>Seiten</h2>
+    <div class="chips" id="ed_pages"></div>
+    <div class="row">
+      <button class="s" id="ed_padd">+ Seite</button>
+      <button class="s" id="ed_pleft">◀</button><button class="s" id="ed_pright">▶</button>
+      <button class="s" id="ed_pdel">Seite löschen</button>
+    </div>
+  </div>
+  <div class="card" id="ed_page">
+    <h2>Seite</h2>
+    <div class="two">
+      <div><label for="ed_ptitle">Titel (Variablen wie {raum} erlaubt)</label><input id="ed_ptitle"></div>
+      <div><label for="ed_pkind">Inhalt</label>
+        <select id="ed_pkind"><option value="manual">Eigene Kacheln</option><option value="room">Automatisch: alle Bausteine eines Raums</option><option value="fav">Automatisch: Favoriten</option></select></div>
+    </div>
+    <div id="ed_proom_w" class="hidden"><label for="ed_proom">Raum</label><select id="ed_proom"></select></div>
+    <div id="ed_grid_w">
+      <label><input type="checkbox" id="ed_pgrid" style="width:auto"> Eigenes Raster statt Standard</label>
+      <div class="two"><div><label for="ed_pcols">Spalten</label><input id="ed_pcols" type="number" min="1" max="8"></div>
+        <div><label for="ed_prows">Zeilen</label><input id="ed_prows" type="number" min="1" max="8"></div></div>
+    </div>
+    <div id="ed_tiles_w">
+      <div class="gridprev" id="ed_grid"></div>
+      <div class="row"><button class="s" id="ed_tadd">+ Kachel</button><span class="hint">Kachel anklicken zum Bearbeiten.</span></div>
+    </div>
+  </div>
+  <div class="card hidden" id="ed_tile">
+    <h2>Kachel</h2>
+    <label>Baustein</label>
+    <div class="row" style="margin-top:0"><input id="ed_tziel" style="flex:1"><button class="s" id="ed_tpick">Wählen …</button></div>
+    <div class="hint" id="ed_tres"></div>
+    <div class="two">
+      <div><label for="ed_ttyp">Typ</label><select id="ed_ttyp">
+        <option value="auto">automatisch</option><option value="schalter">Schalter/Taster</option><option value="dimmer">Dimmer</option>
+        <option value="jalousie">Jalousie</option><option value="licht">Lichtsteuerung</option><option value="raumregler">Raumregler</option>
+        <option value="zaehler">Zähler</option><option value="energie">Energiefluss</option><option value="tuer">Tür &amp; Zutritt</option><option value="kamera">Kamera</option><option value="info">Anzeige</option></select></div>
+      <div><label for="ed_ttitle">Anzeigename (optional)</label><input id="ed_ttitle"></div>
+      <div><label for="ed_tw">Breite (Zellen)</label><select id="ed_tw"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+      <div><label for="ed_th">Höhe (Zellen)</label><select id="ed_th"><option>1</option><option>2</option><option>3</option></select></div>
+    </div>
+    <label><input type="checkbox" id="ed_thide" style="width:auto"> Auf diesem Panel ausblenden</label>
+    <div class="row"><button class="s" id="ed_tleft">◀ früher</button><button class="s" id="ed_tright">später ▶</button><button class="s" id="ed_tdel">Kachel entfernen</button></div>
+  </div>
+  <div class="card">
+    <h2>Allgemein</h2>
+    <div class="two">
+      <div><label for="ed_vorlage">Vorlage</label><input id="ed_vorlage"></div>
+      <div><label for="ed_vver">Vorlagen-Version</label><input id="ed_vver" type="number" min="0"></div>
+      <div><label for="ed_bright">Helligkeit (%)</label><input id="ed_bright" type="number" min="5" max="100"></div>
+      <div><label for="ed_start">Startseite</label><select id="ed_start"></select></div>
+    </div>
+    <label>Variablen (z. B. raum = Wohnzimmer; in Zielen als {raum})</label>
+    <div class="vars" id="ed_vars"></div>
+    <div class="row"><button class="s" id="ed_vadd">+ Variable</button></div>
+  </div>
+  <div class="row">
+    <button class="p" id="ed_save">Prüfen und übernehmen …</button>
+    <button class="s" id="ed_reset">Änderungen verwerfen</button>
+  </div>
+</section>
+
+<div class="modal hidden" id="picker">
+  <div class="box">
+    <div class="row" style="margin-top:0"><input id="pk_q" placeholder="Suchen …" style="flex:1">
+      <select id="pk_group" style="width:auto"><option value="r">nach Raum</option><option value="c">nach Kategorie</option></select>
+      <button class="s" id="pk_close">✕</button></div>
+    <label id="pk_ph_w" class="hidden"><input type="checkbox" id="pk_ph" style="width:auto" checked> Raum als Platzhalter <b id="pk_phname"></b> (für Vorlagen)</label>
+    <div class="plist" id="pk_list"></div>
+  </div>
+</div>
+
+<!-- Konfiguration -->
+<section id="v-config" class="hidden">
+  <div class="card">
+    <h2>Export / Import</h2>
+    <p class="hint">Die Display-Konfiguration (panel.json) enthält Seiten, Kacheln und Variablen – keine Passwörter. Beim Import wird geprüft, eine Vorschau gezeigt und die bisherige Konfiguration als Backup behalten.</p>
+    <div class="row">
+      <a href="/api/config" download="panel.json"><button class="s">Exportieren</button></a>
+      <label class="s" style="margin:0;padding:10px 16px;border-radius:9px;background:var(--btn);color:var(--text);cursor:pointer">Datei importieren …<input type="file" id="file" accept=".json,application/json" hidden></label>
+      <button class="s" id="undo">Rückgängig</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Bearbeiten</h2>
+    <textarea id="json" spellcheck="false"></textarea>
+    <div class="row"><button class="p" id="check">Prüfen …</button><button class="s" id="reload_json">Neu laden</button></div>
+  </div>
+  <div class="card hidden" id="preview">
+    <h2>Vorschau</h2>
+    <ul class="diff" id="diff"></ul>
+    <div class="row"><button class="p" id="apply">Übernehmen</button><button class="s" id="cancel">Abbrechen</button></div>
+  </div>
+  <div class="msg" id="cfg_msg"></div>
+</section>
+
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let info = {}, settings = {}, curCfg = null, newCfgText = null;
+
+async function api(path, opt) {
+  const r = await fetch(path, opt);
+  let j = null; try { j = await r.json(); } catch (e) {}
+  if (r.status === 401 && j && j.error === 'need_password') { show('pw'); throw new Error('need_password'); }
+  return { status: r.status, j };
+}
+function msg(el, text, cls) { $(el).className = 'msg ' + (cls || ''); $(el).textContent = text; }
+function show(v) {
+  for (const s of ['settings', 'pw', 'status', 'config', 'editor']) $('v-' + s).classList.toggle('hidden', s !== v);
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('act', b.dataset.v === v));
+  if (v === 'status') loadStatus();
+  if (v === 'settings') loadSettings();
+  if (v === 'config' && !keepJson) loadConfig();
+  if (v === 'editor') edOpen();
+}
+function dl(el, rows) {
+  $(el).innerHTML = rows.map(([k, v, c]) => `<dt>${k}</dt><dd class="${c || ''}">${v === '' || v == null ? '–' : String(v).replace(/</g, '&lt;')}</dd>`).join('');
+}
+
+/* ---- Status ---- */
+async function loadStatus() {
+  const { j } = await api('/api/status');
+  if (!j || !j.wifi) return;
+  const w = j.wifi, l = j.loxone, s = j.system;
+  dl('st_wifi', [['Status', w.state, w.state === 'verbunden' ? 'ok' : 'warn'], ['Netzwerk', w.ssid], ['IP', w.ip],
+    ['Signal', w.rssi ? w.rssi + ' dBm, Kanal ' + w.channel : ''], ['Trennungen', w.disconnects + ' (Roams ' + w.roams + ')'], ['C6-Firmware', w.c6_fw]]);
+  dl('st_lox', [['Status', l.state, l.state === 'online' ? 'ok' : 'warn'], ['Miniserver', l.ms_name], ['Firmware', l.fw + (l.hash ? ' (' + l.hash + ')' : '')],
+    ['Anmeldung', l.token ? 'Token vorhanden' : 'kein Token'], ['Struktur', l.rooms + ' Räume, ' + l.controls + ' Bausteine'], ['Fehler', l.error, 'err']]);
+  const up = s.uptime_s, h = Math.floor(up / 3600), m = Math.floor(up % 3600 / 60);
+  dl('st_sys', [['Board', s.board], ['Firmware', s.fw + ' (IDF ' + s.idf + ')'], ['Laufzeit', h + ' h ' + m + ' min'],
+    ['Speicher frei', s.heap_int_kb + ' kB intern, ' + s.heap_psram_kb + ' kB PSRAM']]);
+  $('undo').disabled = !s.cfg_backup;
+}
+setInterval(() => { if (!$('v-status').classList.contains('hidden')) loadStatus(); }, 5000);
+$('reboot').onclick = async () => { if (confirm('Panel neu starten?')) { await api('/api/reboot', { method: 'POST' }); msg('cfg_msg', ''); } };
+
+/* ---- Einstellungen / Einrichtung ---- */
+const FIELDS = ['wifi_ssid', 'ip', 'mask', 'gw', 'mac', 'ms_host', 'ms_user'];
+async function loadSettings() {
+  const { j } = await api('/api/settings');
+  if (!j) return;
+  settings = j;
+  for (const f of FIELDS) $(f).value = j[f] || '';
+  $('wifi_pass').value = $('ms_pass').value = $('web_pass').value = '';
+  $('wifi_pass_hint').textContent = j.wifi_pass_set ? 'Gespeichert – leer lassen, um es zu behalten.' : '';
+  $('ms_pass_hint').textContent = j.ms_token ? 'Token vorhanden – Passwort nur nötig, wenn sich Miniserver oder Benutzer ändern.'
+    : (j.ms_pass_set ? 'Gespeichert – wird nach der ersten Anmeldung gelöscht.' : 'Wird nur für die erste Anmeldung gebraucht und danach gelöscht.');
+  $('web_pass_hint').textContent = j.web_pass_set ? 'Gesetzt – leer lassen, um es zu behalten.' : 'Bitte festlegen (mindestens 4 Zeichen).';
+}
+$('scan').onclick = async () => {
+  $('scan').disabled = true; $('scan').textContent = 'Suche …';
+  try {
+    const { j } = await api('/api/scan');
+    $('ssid_list').innerHTML = '<option value="">– auswählen –</option>' + (j || []).map(a =>
+      `<option value="${a.ssid.replace(/"/g, '&quot;')}">${a.ssid.replace(/</g, '&lt;')} (${a.rssi} dBm${a.secure ? '' : ', offen'})</option>`).join('');
+  } finally { $('scan').disabled = false; $('scan').textContent = 'Suchen'; }
+};
+$('ssid_list').onchange = () => { if ($('ssid_list').value) $('wifi_ssid').value = $('ssid_list').value; };
+async function save(reboot) {
+  const body = {};
+  for (const f of FIELDS) body[f] = $(f).value.trim();
+  for (const f of ['wifi_pass', 'ms_pass', 'web_pass']) if ($(f).value) body[f] = $(f).value;
+  if (!body.wifi_ssid) return msg('set_msg', 'Bitte ein WLAN wählen.', 'err');
+  if (info.mode === 'setup' && !body.web_pass && !settings.web_pass_set) return msg('set_msg', 'Bitte ein Passwort für die Weboberfläche festlegen.', 'err');
+  const { j } = await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!j || !j.ok) return msg('set_msg', (j && j.msg) || 'Fehler', 'err');
+  if (reboot) {
+    await api('/api/reboot', { method: 'POST' });
+    msg('set_msg', info.mode === 'setup'
+      ? `Gespeichert. Das Panel startet neu und verbindet sich mit „${body.wifi_ssid}“. Danach erreichbar unter http://${info.hostname}.local`
+      : 'Gespeichert. Das Panel startet neu …', 'ok');
+  } else {
+    msg('set_msg', 'Gespeichert. WLAN- und Miniserver-Änderungen gelten nach einem Neustart.', 'ok');
+    loadSettings();
+  }
+}
+$('save').onclick = () => save(info.mode === 'setup');
+$('save_reboot').onclick = () => save(true);
+
+/* ---- Passwort festlegen ---- */
+$('pw_set').onclick = async () => {
+  if ($('pw1').value.length < 4) return msg('pw_msg', 'Mindestens 4 Zeichen.', 'err');
+  if ($('pw1').value !== $('pw2').value) return msg('pw_msg', 'Die Eingaben stimmen nicht überein.', 'err');
+  const { j } = await api('/api/password', { method: 'POST', body: JSON.stringify({ web_pass: $('pw1').value }) });
+  if (j && j.ok) { msg('pw_msg', 'Passwort gesetzt. Seite wird neu geladen – melde dich mit „admin“ an.', 'ok'); setTimeout(() => location.reload(), 1500); }
+  else msg('pw_msg', (j && j.msg) || 'Fehler', 'err');
+};
+
+/* ---- Konfiguration ---- */
+async function loadConfig() {
+  const r = await fetch('/api/config');
+  if (!r.ok) return;
+  const t = await r.text();
+  $('json').value = t;
+  try { curCfg = JSON.parse(t); } catch (e) { curCfg = null; }
+  loadStatus();
+}
+$('reload_json').onclick = loadConfig;
+$('file').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  $('json').value = await f.text(); e.target.value = ''; preview();
+};
+$('check').onclick = preview;
+function pageSummary(p) {
+  return p.auto ? 'automatisch (' + (p.auto.raum ? 'Raum ' + p.auto.raum : 'Favoriten') + ')' : ((p.kacheln || []).length + ' Kacheln');
+}
+function preview() {
+  newCfgText = $('json').value;
+  let n;
+  try { n = JSON.parse(newCfgText); } catch (e) { $('preview').classList.add('hidden'); return msg('cfg_msg', 'Kein gültiges JSON: ' + e.message, 'err'); }
+  const out = [];
+  if (n.schema !== 1) out.push(`<li class="err">Schema ${n.schema} wird nicht unterstützt (erwartet 1)</li>`);
+  if (!Array.isArray(n.seiten) || !n.seiten.length) out.push('<li class="err">„seiten“ fehlt oder ist leer</li>');
+  const o = curCfg || {};
+  if (o.vorlage !== n.vorlage || o.vorlage_version !== n.vorlage_version)
+    out.push(`<li>Vorlage: ${o.vorlage || '–'} v${o.vorlage_version || '–'} → <b>${n.vorlage || '–'} v${n.vorlage_version || '–'}</b></li>`);
+  if (JSON.stringify(o.variablen) !== JSON.stringify(n.variablen))
+    out.push(`<li>Variablen: ${JSON.stringify(o.variablen || {})} → <b>${JSON.stringify(n.variablen || {})}</b></li>`);
+  const op = (o.seiten || []).map(p => p.titel), np = (n.seiten || []).map(p => p.titel);
+  for (const p of n.seiten || []) {
+    const old = (o.seiten || []).find(x => x.titel === p.titel);
+    if (!old) out.push(`<li class="ok">Neue Seite „${p.titel}“: ${pageSummary(p)}</li>`);
+    else if (JSON.stringify(old) !== JSON.stringify(p)) out.push(`<li class="warn">Geändert „${p.titel}“: ${pageSummary(old)} → ${pageSummary(p)}</li>`);
+  }
+  for (const t of op) if (!np.includes(t)) out.push(`<li class="err">Entfernt: Seite „${t}“</li>`);
+  if (JSON.stringify(o.abweichungen || {}) !== JSON.stringify(n.abweichungen || {}))
+    out.push(`<li>Abweichungen: ${Object.keys(o.abweichungen || {}).length} → ${Object.keys(n.abweichungen || {}).length} Einträge</li>`);
+  if (!out.length) out.push('<li>Keine Änderungen.</li>');
+  $('diff').innerHTML = out.join('');
+  $('preview').classList.remove('hidden');
+  $('apply').disabled = out.some(l => l.includes('class="err">Schema') || l.includes('„seiten“ fehlt'));
+  msg('cfg_msg', '');
+}
+$('cancel').onclick = () => $('preview').classList.add('hidden');
+$('apply').onclick = async () => {
+  const { j } = await api('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: newCfgText });
+  $('preview').classList.add('hidden');
+  if (j && j.ok) { msg('cfg_msg', 'Übernommen – das Panel baut die Seiten neu auf. Die bisherige Konfiguration ist als Backup gespeichert.', 'ok'); ed = null; loadConfig(); }
+  else msg('cfg_msg', (j && j.msg) || 'Fehler', 'err');
+};
+$('undo').onclick = async () => {
+  if (!confirm('Vorherige Konfiguration wiederherstellen?')) return;
+  const { j } = await api('/api/config/undo', { method: 'POST' });
+  msg('cfg_msg', (j && j.msg) || 'Fehler', j && j.ok ? 'ok' : 'err');
+  ed = null;
+  loadConfig();
+};
+
+/* ---- Editor ---- */
+const TYPES = { schalter: ['Switch', 'Pushbutton'], dimmer: ['Dimmer', 'EIBDimmer'], jalousie: ['Jalousie'],
+  licht: ['LightControllerV2'], raumregler: ['IRoomControllerV2'], zaehler: ['Meter'], energie: ['EFM'], kamera: ['Intercom', 'IntercomV2'],
+  tuer: ['Intercom', 'IntercomV2', 'Gate', 'NfcCodeTouch', 'WindowMonitor'],
+  info: ['InfoOnlyAnalog', 'InfoOnlyDigital', 'TextState'] };
+const TYP_OF = {}; for (const [k, v] of Object.entries(TYPES)) for (const t of v) TYP_OF[t] = k;
+const TNAME = { schalter: 'Schalter', dimmer: 'Dimmer', jalousie: 'Jalousie', licht: 'Licht', raumregler: 'Raumregler',
+  zaehler: 'Zähler', energie: 'Energiefluss', kamera: 'Kamera', tuer: 'Tür & Zutritt', info: 'Anzeige', auto: 'automatisch' };
+let ed = null, ctl = null, edPage = 0, edTile = -1, pkCb = null, keepJson = false;
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const norm = s => String(s ?? '').trim().toLowerCase();
+const expandVars = s => String(s ?? '').replace(/\{([^}]+)\}/g, (m, k) => (ed.variablen && k in ed.variablen) ? ed.variablen[k] : m);
+
+async function edOpen() {
+  if (!ctl) {
+    const { j } = await api('/api/controls');
+    if (!j || !j.controls) return msg('ed_msg', (j && j.msg) || 'Struktur nicht verfügbar', 'err');
+    ctl = j; ctl.rooms.sort((a, b) => a.localeCompare(b, 'de'));
+  }
+  if (!ed) await edLoad();
+  if (ed) { msg('ed_msg', ''); edRender(); }
+}
+async function edLoad() {
+  const t = await (await fetch('/api/config')).text();
+  let c; try { c = JSON.parse(t); } catch (e) { return msg('ed_msg', 'Gespeicherte Konfiguration ist kein gültiges JSON – bitte unter „Konfiguration“ korrigieren.', 'err'); }
+  ed = c; ed.seiten = ed.seiten || []; ed.variablen = ed.variablen || {}; ed.anzeige = ed.anzeige || {};
+  const ab = ed.abweichungen || {};
+  for (const p of ed.seiten) {
+    p._orig = expandVars(p.titel);
+    if (p.auto) continue;
+    p.kacheln = p.kacheln || [];
+    /* Auf dem Panel gewählte Bausteine übernehmen, Ausblendungen als Häkchen */
+    p.kacheln.forEach((k, i) => { const o = ab[p._orig + '/' + (i + 1)]; if (o) { if (o.ziel) k.ziel = o.ziel; if (o.ausblenden) k._hide = true; } });
+  }
+  edPage = Math.max(0, Math.min(edPage, ed.seiten.length - 1)); edTile = -1;
+}
+function resolve(k) {
+  const z = expandVars(k.ziel);
+  if (z.startsWith('uuid:')) { const c = ctl.controls.find(x => x.u === z.slice(5)); return c ? { st: 'ok', c } : { st: 'missing' }; }
+  const i = z.indexOf('/'); if (i < 0) return { st: 'missing' };
+  const room = norm(z.slice(0, i)), name = norm(z.slice(i + 1)), types = TYPES[k.typ || 'auto'];
+  const hits = ctl.controls.filter(c => norm(c.r) === room && norm(c.n) === name && (!types || types.includes(c.t)));
+  if (hits.length === 1) return { st: 'ok', c: hits[0] };
+  const top = hits.filter(c => !c.p);
+  if (hits.length > 1 && top.length === 1) return { st: 'ok', c: top[0] };
+  return { st: hits.length ? 'ambiguous' : 'missing', hits };
+}
+const gridOf = p => (p.raster && p.raster.length === 2) ? p.raster : (info.grid || [5, 3]);
+const curPage = () => ed.seiten[edPage];
+const curTile = () => { const p = curPage(); return p && !p.auto ? p.kacheln[edTile] : null; };
+
+function edRender() {
+  $('ed_pages').innerHTML = ed.seiten.map((p, i) =>
+    `<button class="chip ${i === edPage ? 'act' : ''} ${p.auto ? 'auto' : ''}" data-i="${i}">${esc(p.titel || '(ohne Titel)')}</button>`).join('');
+  $('ed_pages').querySelectorAll('.chip').forEach(b => b.onclick = () => { edPage = +b.dataset.i; edTile = -1; edRender(); });
+  const p = curPage();
+  $('ed_page').classList.toggle('hidden', !p);
+  if (p) {
+    $('ed_ptitle').value = p.titel || '';
+    $('ed_pkind').value = p.auto ? (p.auto.favoriten ? 'fav' : 'room') : 'manual';
+    const rv = ed.variablen.raum;
+    $('ed_proom').innerHTML = (rv ? `<option value="{raum}">{raum} (= ${esc(rv)})</option>` : '') +
+      ctl.rooms.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
+    $('ed_proom_w').classList.toggle('hidden', !(p.auto && !p.auto.favoriten));
+    if (p.auto && !p.auto.favoriten) $('ed_proom').value = p.auto.raum || '';
+    const [c, r] = gridOf(p);
+    $('ed_pgrid').checked = !!p.raster; $('ed_pcols').value = c; $('ed_prows').value = r;
+    $('ed_pcols').disabled = $('ed_prows').disabled = !p.raster;
+    $('ed_tiles_w').classList.toggle('hidden', !!p.auto);
+    if (!p.auto) renderGrid(p);
+  }
+  renderTile(); renderGeneral();
+}
+function renderGrid(p) {
+  const [cols, rows] = gridOf(p), used = [];
+  const busy = (y, x) => used[y] && used[y][x];
+  let html = '', maxRow = rows;
+  p.kacheln.forEach((k, i) => {
+    const w = Math.min(k.breite || 1, cols), h = k.hoehe || 1; let pos = null;
+    for (let r = 0; r < 32 && !pos; r++) for (let c = 0; c + w <= cols; c++) {
+      let free = true;
+      for (let y = r; y < r + h && free; y++) for (let x = c; x < c + w && free; x++) if (busy(y, x)) free = false;
+      if (free) { for (let y = r; y < r + h; y++) { used[y] = used[y] || []; for (let x = c; x < c + w; x++) used[y][x] = true; } pos = { r, c }; break; }
+    }
+    if (!pos) return;
+    maxRow = Math.max(maxRow, pos.r + h);
+    const res = resolve(k), nm = k.titel || (res.c ? res.c.n : k.ziel);
+    html += `<div class="gt ${i === edTile ? 'sel' : ''} ${res.st} ${k._hide ? 'hiddenTile' : ''}" data-i="${i}"
+      style="grid-column:${pos.c + 1}/span ${w};grid-row:${pos.r + 1}/span ${h}">
+      <div class="tn">${esc(nm)}</div><div class="tt">${esc(TNAME[k.typ || 'auto'] || k.typ)}${res.c ? ' · ' + esc(res.c.r) : ''}</div>
+      <span class="badge b-${res.st}">${{ ok: 'ok', missing: 'nicht gefunden', ambiguous: 'mehrdeutig' }[res.st]}</span></div>`;
+  });
+  const g = $('ed_grid');
+  g.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  g.style.gridTemplateRows = `repeat(${maxRow},minmax(72px,auto))`;
+  g.innerHTML = html || '<div class="hint">Noch keine Kacheln – „+ Kachel“ drücken.</div>';
+  g.querySelectorAll('.gt').forEach(d => d.onclick = () => { edTile = +d.dataset.i; edRender(); });
+}
+function renderTile() {
+  const k = curTile();
+  $('ed_tile').classList.toggle('hidden', !k);
+  if (!k) return;
+  $('ed_tziel').value = k.ziel || ''; $('ed_ttyp').value = k.typ || 'auto'; $('ed_ttitle').value = k.titel || '';
+  $('ed_tw').value = k.breite || 1; $('ed_th').value = k.hoehe || 1; $('ed_thide').checked = !!k._hide;
+  const res = resolve(k);
+  $('ed_tres').innerHTML = res.st === 'ok' ? `<span class="ok">✓ ${esc(res.c.r)} / ${esc(res.c.n)} (${esc(res.c.t)}${res.c.p ? ', in ' + esc(res.c.p) : ''})</span>`
+    : res.st === 'ambiguous' ? `<span class="warn">Mehrdeutig: ${res.hits.length} Bausteine passen – über „Wählen …“ genau einen auswählen.</span>`
+    : '<span class="err">Kein passender Baustein gefunden.</span>';
+}
+function renderGeneral() {
+  $('ed_vorlage').value = ed.vorlage || ''; $('ed_vver').value = ed.vorlage_version ?? 0;
+  $('ed_bright').value = ed.anzeige.helligkeit ?? 80;
+  $('ed_start').innerHTML = ed.seiten.map((p, i) => `<option value="${i}">${esc(p.titel)}</option>`).join('');
+  $('ed_start').value = ed.anzeige.startseite ?? 0;
+  $('ed_vars').innerHTML = Object.entries(ed.variablen).map(([k, v]) =>
+    `<div class="row"><input class="vk" value="${esc(k)}" style="flex:1"><input class="vv" value="${esc(v)}" style="flex:2"><button class="s vdel">✕</button></div>`).join('');
+  $('ed_vars').querySelectorAll('input').forEach(i => i.onchange = readVars);
+  $('ed_vars').querySelectorAll('.vdel').forEach(b => b.onclick = () => { b.parentElement.remove(); readVars(); });
+}
+function readVars() {
+  const v = {};
+  $('ed_vars').querySelectorAll('.row').forEach(r => { const k = r.querySelector('.vk').value.trim(); if (k) v[k] = r.querySelector('.vv').value; });
+  ed.variablen = v; edRender();
+}
+
+/* Seite */
+$('ed_padd').onclick = () => { ed.seiten.push({ titel: 'Neue Seite', kacheln: [] }); edPage = ed.seiten.length - 1; edTile = -1; edRender(); };
+$('ed_pleft').onclick = () => { if (edPage > 0) { const s = ed.seiten; [s[edPage - 1], s[edPage]] = [s[edPage], s[edPage - 1]]; edPage--; edRender(); } };
+$('ed_pright').onclick = () => { const s = ed.seiten; if (edPage < s.length - 1) { [s[edPage + 1], s[edPage]] = [s[edPage], s[edPage + 1]]; edPage++; edRender(); } };
+$('ed_pdel').onclick = () => {
+  if (!curPage() || !confirm(`Seite „${curPage().titel}“ löschen?`)) return;
+  ed.seiten.splice(edPage, 1); edPage = Math.max(0, edPage - 1); edTile = -1; edRender();
+};
+$('ed_ptitle').onchange = () => { curPage().titel = $('ed_ptitle').value.trim() || 'Seite'; edRender(); };
+$('ed_pkind').onchange = () => {
+  const p = curPage(), v = $('ed_pkind').value;
+  if (v === 'manual') { delete p.auto; p.kacheln = p.kacheln || []; }
+  else if (v === 'fav') { p.auto = { favoriten: true }; delete p.kacheln; }
+  else { p.auto = { raum: ed.variablen.raum ? '{raum}' : (ctl.rooms[0] || '') }; delete p.kacheln; }
+  edTile = -1; edRender();
+};
+$('ed_proom').onchange = () => { curPage().auto = { raum: $('ed_proom').value }; edRender(); };
+$('ed_pgrid').onchange = () => { const p = curPage(); if ($('ed_pgrid').checked) p.raster = [...gridOf(p)]; else delete p.raster; edRender(); };
+$('ed_pcols').onchange = $('ed_prows').onchange = () => {
+  const c = Math.max(1, Math.min(8, +$('ed_pcols').value || 1)), r = Math.max(1, Math.min(8, +$('ed_prows').value || 1));
+  curPage().raster = [c, r]; edRender();
+};
+
+/* Kachel */
+$('ed_tadd').onclick = () => openPicker(c => {
+  const z = zielFor(c); const p = curPage();
+  p.kacheln.push({ typ: z.typ, ziel: z.ziel }); edTile = p.kacheln.length - 1; edRender();
+});
+$('ed_tpick').onclick = () => openPicker(c => { const z = zielFor(c), k = curTile(); k.ziel = z.ziel; k.typ = z.typ; edRender(); });
+$('ed_tziel').onchange = () => { curTile().ziel = $('ed_tziel').value.trim(); edRender(); };
+$('ed_ttyp').onchange = () => { curTile().typ = $('ed_ttyp').value; edRender(); };
+$('ed_ttitle').onchange = () => { const k = curTile(), v = $('ed_ttitle').value.trim(); if (v) k.titel = v; else delete k.titel; edRender(); };
+$('ed_tw').onchange = () => { curTile().breite = +$('ed_tw').value; edRender(); };
+$('ed_th').onchange = () => { curTile().hoehe = +$('ed_th').value; edRender(); };
+$('ed_thide').onchange = () => { const k = curTile(); if ($('ed_thide').checked) k._hide = true; else delete k._hide; edRender(); };
+$('ed_tleft').onclick = () => { const a = curPage().kacheln; if (edTile > 0) { [a[edTile - 1], a[edTile]] = [a[edTile], a[edTile - 1]]; edTile--; edRender(); } };
+$('ed_tright').onclick = () => { const a = curPage().kacheln; if (edTile < a.length - 1) { [a[edTile + 1], a[edTile]] = [a[edTile], a[edTile + 1]]; edTile++; edRender(); } };
+$('ed_tdel').onclick = () => { curPage().kacheln.splice(edTile, 1); edTile = -1; edRender(); };
+
+/* Allgemein */
+$('ed_vorlage').onchange = () => ed.vorlage = $('ed_vorlage').value.trim();
+$('ed_vver').onchange = () => ed.vorlage_version = +$('ed_vver').value || 0;
+$('ed_bright').onchange = () => ed.anzeige.helligkeit = Math.max(5, Math.min(100, +$('ed_bright').value || 80));
+$('ed_start').onchange = () => ed.anzeige.startseite = +$('ed_start').value;
+$('ed_vadd').onclick = () => { let n = 'raum', i = 2; while (n in ed.variablen) n = 'var' + i++; ed.variablen[n] = ''; edRender(); };
+
+/* Baustein-Auswahl */
+function openPicker(cb) {
+  pkCb = cb;
+  const rv = ed.variablen.raum;
+  $('pk_ph_w').classList.toggle('hidden', !rv); $('pk_phname').textContent = '{raum} = ' + (rv || '');
+  $('pk_q').value = ''; $('picker').classList.remove('hidden'); renderPicker(); $('pk_q').focus();
+}
+const closePicker = () => $('picker').classList.add('hidden');
+$('pk_close').onclick = closePicker;
+$('picker').onclick = e => { if (e.target === $('picker')) closePicker(); };
+$('pk_q').oninput = $('pk_group').onchange = () => renderPicker();
+function renderPicker() {
+  const q = norm($('pk_q').value), by = $('pk_group').value, groups = {};
+  for (const c of ctl.controls) {
+    if (q && !norm(c.n).includes(q) && !norm(c.r).includes(q) && !norm(c.c).includes(q) && !norm(c.p).includes(q)) continue;
+    const g = (by === 'r' ? c.r : c.c) || '–';
+    (groups[g] = groups[g] || []).push(c);
+  }
+  let html = '';
+  for (const g of Object.keys(groups).sort((a, b) => a.localeCompare(b, 'de'))) {
+    html += `<h3>${esc(g)}</h3>`;
+    for (const c of groups[g].sort((a, b) => (a.p ? 1 : 0) - (b.p ? 1 : 0) || a.n.localeCompare(b.n, 'de'))) {
+      const typ = TYP_OF[c.t];
+      html += `<div class="pi ${typ ? '' : 'dis'}" data-u="${esc(c.u)}" title="${typ ? '' : 'Typ wird noch nicht unterstützt'}">
+        <span>${c.p ? '↳ ' : ''}${esc(c.n)}${c.f ? ' ★' : ''}</span>
+        <span class="sub">${esc(TNAME[typ] || c.t)}${c.p ? ' in ' + esc(c.p) : ''}${by === 'c' ? ' · ' + esc(c.r) : ''}</span></div>`;
+    }
+  }
+  $('pk_list').innerHTML = html || '<div class="hint">Nichts gefunden.</div>';
+  $('pk_list').querySelectorAll('.pi:not(.dis)').forEach(d => d.onclick = () => {
+    const c = ctl.controls.find(x => x.u === d.dataset.u); closePicker(); if (pkCb) pkCb(c);
+  });
+}
+/* Ziel für einen Baustein: "Raum/Name" (klonbar), "{raum}/Name" wenn gewünscht, sonst feste UUID */
+function zielFor(c) {
+  const typ = TYP_OF[c.t] || 'auto', types = TYPES[typ];
+  const same = ctl.controls.filter(x => norm(x.r) === norm(c.r) && norm(x.n) === norm(c.n) && (!types || types.includes(x.t)));
+  const top = same.filter(x => !x.p);
+  const unique = same.length === 1 || (top.length === 1 && top[0].u === c.u);
+  if (!unique || !c.r) return { ziel: 'uuid:' + c.u, typ };
+  const rv = ed.variablen.raum;
+  const room = (rv && norm(rv) === norm(c.r) && $('pk_ph').checked) ? '{raum}' : c.r;
+  return { ziel: room + '/' + c.n, typ };
+}
+
+/* Speichern: Abweichungen auf die neuen Kachelnummern abbilden, dann Vorschau */
+function edBuild() {
+  const out = JSON.parse(JSON.stringify(ed)), oldAb = ed.abweichungen || {}, ab = {};
+  out.seiten.forEach((p, pi) => {
+    const src = ed.seiten[pi], title = expandVars(src.titel);
+    if (p.auto) {
+      for (const [key, v] of Object.entries(oldAb)) if (src._orig && key.startsWith(src._orig + '/')) ab[title + key.slice(src._orig.length)] = v;
+    } else {
+      p.kacheln.forEach((k, i) => {
+        if (k._hide) ab[title + '/' + (i + 1)] = { ausblenden: true };
+        delete k._hide;
+        if ((k.breite || 1) === 1) delete k.breite;
+        if ((k.hoehe || 1) === 1) delete k.hoehe;
+      });
+    }
+    delete p._orig;
+  });
+  out.abweichungen = ab;
+  return out;
+}
+$('ed_save').onclick = async () => {
+  const o = edBuild();
+  try { curCfg = JSON.parse(await (await fetch('/api/config')).text()); } catch (e) { curCfg = null; }
+  keepJson = true; show('config'); keepJson = false;
+  $('json').value = JSON.stringify(o, null, 2);
+  preview();
+  $('preview').scrollIntoView({ behavior: 'smooth' });
+};
+$('ed_reset').onclick = async () => { if (confirm('Alle Änderungen im Editor verwerfen?')) { ed = null; await edOpen(); } };
+
+/* ---- Start ---- */
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => show(b.dataset.v));
+(async () => {
+  const r = await fetch('/api/info'); info = await r.json();
+  $('host').textContent = info.mode === 'setup' ? 'Einrichtung · ' + info.ap_ssid : info.hostname + '.local';
+  if (info.mode === 'setup') {
+    $('setup-intro').hidden = false; $('save').textContent = 'Speichern und verbinden';
+    show('settings'); $('scan').click();
+  } else if (info.need_password) {
+    show('pw');
+  } else {
+    $('nav').classList.remove('hidden'); $('save_reboot').classList.remove('hidden');
+    show('status');
+  }
+})();
+</script>
+</body>
+</html>

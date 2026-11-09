@@ -1,0 +1,22 @@
+# Board-spezifische Voreinstellungen: Elecrow CrowPanel Advanced ESP32-P4 9"
+# Quelle: Schaltplan "ESP32-P4 Display 9.0 inch V1.2.sch" (Netze SD2_*, C6_EN)
+
+# ESP32-C6 über SDIO (Slot 1, 4 Bit).
+# ACHTUNG: Elecrow hat die Datenleitungen zwischen den Board-Revisionen getauscht:
+#   PCB V1.0:        D0=14 D1=15 D2=16 D3=17   (aktiv, Entwicklungsboard)
+#   PCB V1.1 / V1.2: D0=17 D1=16 D2=15 D3=14
+# CLK=18, CMD=19, C6_EN=32 sind in allen Revisionen gleich.
+CONFIG_ESP_HOSTED_CP_TARGET_ESP32C6=y
+CONFIG_ESP_HOSTED_SDIO_HOST_INTERFACE=y
+CONFIG_ESP_HOSTED_SDIO_SLOT_1=y
+# 1-Bit-Bus wie in Elecrows getestetem Host-Beispiel: Mit 4 Bit @ 40 MHz bricht der Bus
+# unter Last mit CRC-Fehlern (0x109) zusammen (auf PCB V1.0 reproduzierbar nach ~250 kB).
+CONFIG_ESP_HOSTED_SDIO_1_BIT_BUS=y
+CONFIG_ESP_HOSTED_SDIO_CLOCK_FREQ_KHZ=40000
+CONFIG_ESP_HOSTED_PRIV_SDIO_PIN_CMD_SLOT_1=19
+CONFIG_ESP_HOSTED_PRIV_SDIO_PIN_CLK_SLOT_1=18
+CONFIG_ESP_HOSTED_PRIV_SDIO_PIN_D0_SLOT_1=14
+CONFIG_ESP_HOSTED_PRIV_SDIO_PIN_D1_1BIT_BUS_SLOT_1=15
+# C6_EN hängt direkt an GPIO32 (Pull-up R77). esp_hosted "Active High" = Low-Puls löst Reset aus.
+CONFIG_ESP_HOSTED_SDIO_GPIO_RESET_SLAVE=32
+CONFIG_ESP_HOSTED_SDIO_RESET_ACTIVE_HIGH=y
